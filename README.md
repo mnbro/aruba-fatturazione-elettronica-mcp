@@ -12,9 +12,15 @@
 
 Documentation: https://mnbro.github.io/aruba-fatturazione-elettronica-mcp/
 
+- Tool list: https://mnbro.github.io/aruba-fatturazione-elettronica-mcp/tools/
+- LLM-friendly tools: https://mnbro.github.io/aruba-fatturazione-elettronica-mcp/llm-tools/
+- API parity: https://mnbro.github.io/aruba-fatturazione-elettronica-mcp/api-parity/
+
 This MCP server exposes read-only Aruba Fatturazione Elettronica API operations. It does not send invoices, upload files, accept or reject invoices, update resources, delete resources, or expose business POST/PUT/PATCH/DELETE operations.
 
 Authentication uses `POST /auth/signin` because Aruba requires it for signin and refresh token lifecycle. Those POST requests are internal auth operations only.
+
+The server also includes LLM-friendly read-only tools for invoice context, FatturaPA XML parsing, SDI notification explanations, VAT summaries, duplicate/anomaly checks, safe redaction and an optional local SQLite invoice index. The index writes only to the configured local database path and never modifies Aruba.
 
 Badges for PyPI, release, downloads and Codecov become active after the first publication/release and Codecov setup.
 

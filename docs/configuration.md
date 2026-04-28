@@ -12,6 +12,7 @@
 | `ARUBA_MAX_BINARY_RESPONSE_BYTES` | `10485760` | Maximum binary body before Base64 wrapping. |
 | `ARUBA_AUDIT_LOG_ENABLED` | `true` | Emit redacted audit logs. |
 | `ARUBA_HTTP_USER_AGENT` | package/version | Custom User-Agent. |
+| `ARUBA_INDEX_DB_PATH` | `.aruba-invoice-index.sqlite3` | Local SQLite path used only by optional invoice index tools. |
 
 Demo URLs:
 

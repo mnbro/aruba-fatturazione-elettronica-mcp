@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aruba-fatturazione-elettronica-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "Read-only MCP server for Aruba Fatturazione Elettronica API"
 readme = "README.md"
 license = "MIT"
@@ -21,6 +21,7 @@ classifiers = [
   "Topic :: Office/Business :: Financial :: Accounting",
 ]
 dependencies = [
+  "defusedxml>=0.7.1",
   "httpx>=0.27.0",
   "mcp[cli]>=1.2.0",
   "pydantic>=2.7.0",
@@ -33,6 +34,7 @@ dev = [
   { include-group = "docs" },
   "mypy>=1.10.0",
   "ruff>=0.5.0",
+  "types-defusedxml>=0.7.0",
 ]
 test = [
   "pytest>=8.2.0",

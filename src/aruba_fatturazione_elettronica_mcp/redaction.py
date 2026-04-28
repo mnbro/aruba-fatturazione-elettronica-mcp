@@ -8,7 +8,19 @@ from collections.abc import Mapping
 from typing import Any
 
 SECRET_KEYS = ("password", "token", "authorization", "secret", "grant_type")
-PII_KEYS = ("vat", "vatcode", "fiscal", "fiscalcode", "codicefiscale")
+PII_KEYS = (
+    "address",
+    "cap",
+    "codicefiscale",
+    "fiscal",
+    "fiscalcode",
+    "iban",
+    "indirizzo",
+    "pec",
+    "sdi_code",
+    "vat",
+    "vatcode",
+)
 BASE64_RE = re.compile(r"^[A-Za-z0-9+/=\s]{120,}$")
 
 

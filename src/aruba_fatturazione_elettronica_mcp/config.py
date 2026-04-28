@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     )
     audit_log_enabled: bool = Field(default=True, validation_alias="ARUBA_AUDIT_LOG_ENABLED")
     http_user_agent: str | None = Field(default=None, validation_alias="ARUBA_HTTP_USER_AGENT")
+    index_db_path: str = Field(
+        default=".aruba-invoice-index.sqlite3", validation_alias="ARUBA_INDEX_DB_PATH"
+    )
     auth_rate_limit_per_minute: int = Field(
         default=1, gt=0, validation_alias="ARUBA_AUTH_RATE_LIMIT_PER_MINUTE"
     )

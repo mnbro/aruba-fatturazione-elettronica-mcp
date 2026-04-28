@@ -2,6 +2,8 @@
 
 This project exposes Aruba Fatturazione Elettronica API GET operations as MCP tools. Business operations are strictly read-only.
 
+It also provides composed LLM-friendly tools for invoice summaries, FatturaPA XML parsing, SDI notification explanations, VAT reports, duplicate/anomaly checks, privacy redaction and optional local SQLite indexing.
+
 Official documentation checked:
 
 - English: https://fatturazioneelettronica.aruba.it/apidoc/docs_EN.html
