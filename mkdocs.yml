@@ -1,0 +1,25 @@
+site_name: Aruba Fatturazione Elettronica MCP Read-only
+site_url: https://mnbro.github.io/aruba-fatturazione-elettronica-mcp/
+repo_url: https://github.com/mnbro/aruba-fatturazione-elettronica-mcp
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.instant
+    - content.code.copy
+nav:
+  - Overview: index.md
+  - Quickstart: quickstart.md
+  - Configuration: configuration.md
+  - Tools: tools.md
+  - API Parity: api-parity.md
+  - Security: security.md
+  - Development: development.md
+  - Troubleshooting: troubleshooting.md
+  - Changelog: changelog.md
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+strict: true

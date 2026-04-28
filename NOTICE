@@ -1,0 +1,14 @@
+Aruba Fatturazione Elettronica MCP Read-only
+
+This project is MIT licensed.
+
+The implementation was designed with reference to the public Aruba API
+documentation and inspired by the following MIT-licensed projects:
+
+- https://github.com/zangetsu02/fatturazione-elettronica-aruba
+- https://github.com/andreafalzetti/node-fatturazione-elettronica-aruba
+- https://github.com/mnbro/listmonk-mcp-bridge
+
+No source files were copied verbatim from those projects in this initial
+implementation. If future changes adapt or copy code, preserve the original
+copyright and license notices here.

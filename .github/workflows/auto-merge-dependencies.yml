@@ -1,0 +1,38 @@
+name: Auto-merge Dependency Updates
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge-after-ci:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.pull_requests[0]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge successful bot dependency PRs
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN_FOR_UPDATES || github.token }}
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+          REPO: ${{ github.repository }}
+        run: |
+          author="$(gh pr view "$PR_NUMBER" --repo "$REPO" --json author --jq .author.login)"
+          head_ref="$(gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefName --jq .headRefName)"
+          labels="$(gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '[.labels[].name] | join(",")')"
+
+          if { [ "$author" = "dependabot[bot]" ] || [ "$author" = "app/dependabot" ] || [ "$author" = "github-actions[bot]" ]; } && [[ "$labels" == *security* ]]; then
+            gh pr merge "$PR_NUMBER" --repo "$REPO" --squash --delete-branch
+          elif [[ "$head_ref" == release-please--* ]] && [[ "$labels" == *autorelease* ]]; then
+            gh pr merge "$PR_NUMBER" --repo "$REPO" --squash --delete-branch
+          else
+            echo "Skipping PR #$PR_NUMBER from $author on $head_ref with labels: $labels"
+          fi

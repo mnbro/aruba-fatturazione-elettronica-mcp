@@ -1,0 +1,71 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/aruba-fatturazione-elettronica-mcp
+    permissions:
+      id-token: write
+      contents: write
+    env:
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync dependencies
+        run: uv sync --locked --all-extras --dev
+
+      - name: Run linting
+        run: uv run ruff check .
+
+      - name: Run format check
+        run: uv run ruff format --check .
+
+      - name: Run type checking
+        run: uv run mypy src
+
+      - name: Run tests
+        run: uv run pytest --cov=aruba_fatturazione_elettronica_mcp --cov-report=xml --cov-report=term-missing
+
+      - name: Build docs
+        run: uv run mkdocs build --strict
+
+      - name: Build package
+        run: uv build
+
+      - name: Publish to PyPI with API token
+        if: env.PYPI_API_TOKEN != ''
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+
+      - name: Publish to PyPI with trusted publishing
+        if: env.PYPI_API_TOKEN == ''
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+
+      - name: Ensure GitHub Release exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release view "$GITHUB_REF_NAME" || gh release create "$GITHUB_REF_NAME" --generate-notes --latest

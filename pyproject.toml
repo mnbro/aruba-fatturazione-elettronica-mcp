@@ -1,0 +1,93 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aruba-fatturazione-elettronica-mcp"
+version = "0.1.0"
+description = "Read-only MCP server for Aruba Fatturazione Elettronica API"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "mnbro" }]
+keywords = ["aruba", "fatturazione-elettronica", "mcp", "invoicing", "readonly"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Office/Business :: Financial :: Accounting",
+]
+dependencies = [
+  "httpx>=0.27.0",
+  "mcp[cli]>=1.2.0",
+  "pydantic>=2.7.0",
+  "pydantic-settings>=2.2.0",
+]
+
+[dependency-groups]
+dev = [
+  { include-group = "test" },
+  { include-group = "docs" },
+  "mypy>=1.10.0",
+  "ruff>=0.5.0",
+]
+test = [
+  "pytest>=8.2.0",
+  "pytest-asyncio>=0.23.0",
+  "pytest-cov>=5.0.0",
+  "pytest-httpx>=0.30.0",
+]
+docs = [
+  "mkdocs>=1.6.0",
+  "mkdocs-material>=9.5.0",
+]
+
+[project.scripts]
+aruba-fatturazione-elettronica-mcp = "aruba_fatturazione_elettronica_mcp.cli:main"
+aruba-fatturazione-elettronica-mcp-readonly = "aruba_fatturazione_elettronica_mcp.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/mnbro/aruba-fatturazione-elettronica-mcp"
+Repository = "https://github.com/mnbro/aruba-fatturazione-elettronica-mcp"
+Issues = "https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/issues"
+Documentation = "https://mnbro.github.io/aruba-fatturazione-elettronica-mcp/"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aruba_fatturazione_elettronica_mcp"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP", "S"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S105", "S106"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["aruba_fatturazione_elettronica_mcp"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q --tb=short"
+
+[tool.coverage.run]
+branch = true
+source = ["aruba_fatturazione_elettronica_mcp"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
