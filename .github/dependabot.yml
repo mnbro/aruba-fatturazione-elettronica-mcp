@@ -14,7 +14,7 @@ updates:
       - "python"
     commit-message:
       prefix: "fix(deps)"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     groups:
       python-security:
         applies-to: security-updates
@@ -34,7 +34,7 @@ updates:
       - "github-actions"
     commit-message:
       prefix: "ci(deps)"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     groups:
       github-actions-security:
         applies-to: security-updates
