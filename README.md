@@ -93,6 +93,5 @@ Inspired by MIT-licensed repositories:
 
 - `zangetsu02/fatturazione-elettronica-aruba`
 - `andreafalzetti/node-fatturazione-elettronica-aruba`
-- `mnbro/listmonk-mcp-bridge`
 
 No code was copied verbatim in this initial implementation. Preserve MIT notices if future changes adapt source code.
