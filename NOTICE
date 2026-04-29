@@ -1,9 +1,9 @@
 Aruba Fatturazione Elettronica MCP Read-only
 
-This project is MIT licensed.
+This project is licensed under the PolyForm Internal Use License 1.0.0.
 
 The implementation was designed with reference to the public Aruba API
-documentation and inspired by the following MIT-licensed projects:
+documentation and inspired by the following projects:
 
 - https://github.com/zangetsu02/fatturazione-elettronica-aruba
 - https://github.com/andreafalzetti/node-fatturazione-elettronica-aruba

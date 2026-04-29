@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- Changed project licensing to PolyForm Internal Use License 1.0.0.
+- Replaced the dynamic GitHub license badge with an explicit PolyForm license badge.
+
 ## 0.2.0
 
 - Added LLM-friendly composed tools for invoice context, search, summaries, timelines, SDI notification explanations, VAT/counterparty reports, anomalies, duplicates and safe redaction.

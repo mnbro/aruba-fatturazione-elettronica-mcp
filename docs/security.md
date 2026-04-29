@@ -15,3 +15,9 @@ Aruba documented rate limits include:
 - Find received notifications: 12 requests/min/IP.
 
 This server implements per-process async rate limiting and token caching. Multi-process deployments still need external coordination if they share the same public IP.
+
+## License
+
+This project is licensed under the [PolyForm Internal Use License 1.0.0](https://polyformproject.org/licenses/internal-use/1.0.0).
+
+You may use and modify it for your own internal business operations, including commercial internal use. You may not redistribute it, resell it, sublicense it, or offer it as a productized service to third parties.

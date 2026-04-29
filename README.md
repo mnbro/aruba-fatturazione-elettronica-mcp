@@ -2,7 +2,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/aruba-fatturazione-elettronica-mcp.svg)](https://pypi.org/project/aruba-fatturazione-elettronica-mcp/)
 [![Python versions](https://img.shields.io/pypi/pyversions/aruba-fatturazione-elettronica-mcp.svg)](https://pypi.org/project/aruba-fatturazione-elettronica-mcp/)
-[![License](https://img.shields.io/github/license/mnbro/aruba-fatturazione-elettronica-mcp.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-PolyForm%20Internal%20Use%201.0.0-blue)](LICENSE)
 [![CI](https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/actions/workflows/ci.yml)
 [![Ruff](https://img.shields.io/badge/lint-ruff-46a2f1)](https://docs.astral.sh/ruff/)
 [![mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
@@ -23,6 +23,12 @@ Authentication uses `POST /auth/signin` because Aruba requires it for signin and
 The server also includes LLM-friendly read-only tools for invoice context, FatturaPA XML parsing, SDI notification explanations, VAT summaries, duplicate/anomaly checks, safe redaction and an optional local SQLite invoice index. The index writes only to the configured local database path and never modifies Aruba.
 
 Badges for PyPI, release, downloads and Codecov become active after the first publication/release and Codecov setup.
+
+## License
+
+This project is licensed under the [PolyForm Internal Use License 1.0.0](LICENSE).
+
+You may use and modify it for your own internal business operations, including commercial internal use. You may not redistribute it, resell it, sublicense it, or offer it as a productized service to third parties.
 
 ## Install
 
@@ -95,9 +101,9 @@ Use dedicated credentials where possible, not shared admin accounts. Verify cont
 
 ## Attribution
 
-Inspired by MIT-licensed repositories:
+Inspired by these projects:
 
 - `zangetsu02/fatturazione-elettronica-aruba`
 - `andreafalzetti/node-fatturazione-elettronica-aruba`
 
-No code was copied verbatim in this initial implementation. Preserve MIT notices if future changes adapt source code.
+No code was copied verbatim in this implementation. Preserve original notices if future changes adapt source code from third-party projects.
