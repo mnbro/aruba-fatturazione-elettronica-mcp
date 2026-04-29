@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aruba-fatturazione-elettronica-mcp"
-version = "0.2.1"
+version = "0.3.0"
 description = "Read-only MCP server for Aruba Fatturazione Elettronica API"
 readme = "README.md"
 license = { file = "LICENSE" }

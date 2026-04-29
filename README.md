@@ -4,6 +4,7 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/aruba-fatturazione-elettronica-mcp.svg)](https://pypi.org/project/aruba-fatturazione-elettronica-mcp/)
 [![License](https://img.shields.io/badge/license-PolyForm%20Internal%20Use%201.0.0-blue)](LICENSE)
 [![CI](https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/actions/workflows/ci.yml?query=branch%3Amaster)
+[![Container](https://img.shields.io/badge/package-ghcr.io%2Fmnbro%2Faruba--fatturazione--elettronica--mcp-blue)](https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/pkgs/container/aruba-fatturazione-elettronica-mcp)
 [![Ruff](https://img.shields.io/badge/lint-ruff-46a2f1)](https://docs.astral.sh/ruff/)
 [![mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Coverage](https://img.shields.io/codecov/c/github/mnbro/aruba-fatturazione-elettronica-mcp.svg)](https://codecov.io/gh/mnbro/aruba-fatturazione-elettronica-mcp)
@@ -13,6 +14,7 @@
 Documentation: https://mnbro.github.io/aruba-fatturazione-elettronica-mcp/
 
 - Tool list: https://mnbro.github.io/aruba-fatturazione-elettronica-mcp/tools/
+- Docker: https://mnbro.github.io/aruba-fatturazione-elettronica-mcp/docker/
 - LLM-friendly tools: https://mnbro.github.io/aruba-fatturazione-elettronica-mcp/llm-tools/
 - API parity: https://mnbro.github.io/aruba-fatturazione-elettronica-mcp/api-parity/
 
@@ -46,6 +48,20 @@ uv run aruba-fatturazione-elettronica-mcp
 ```
 
 `python -m aruba_fatturazione_elettronica_mcp` is also supported.
+
+## Docker
+
+The Debian slim based container image is published to GitHub Container Registry:
+
+```bash
+docker run --rm -i \
+  --env ARUBA_ENV=demo \
+  --env ARUBA_USERNAME \
+  --env ARUBA_PASSWORD \
+  ghcr.io/mnbro/aruba-fatturazione-elettronica-mcp:latest
+```
+
+See the [Docker documentation](https://mnbro.github.io/aruba-fatturazione-elettronica-mcp/docker/) for MCP client configuration and local index volume setup.
 
 ## MCP client config
 

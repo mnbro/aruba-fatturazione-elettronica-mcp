@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- Added a Debian slim based Docker image for the MCP server.
+- Added a GitHub Container Registry publishing workflow and package badge.
+- Added Docker usage documentation for direct runs, MCP clients and local index volumes.
+
 ## 0.2.1
 
 - Changed project licensing to PolyForm Internal Use License 1.0.0.

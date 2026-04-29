@@ -19,6 +19,16 @@ Run:
 uv run aruba-fatturazione-elettronica-mcp
 ```
 
+Or run the Debian slim based container image:
+
+```bash
+docker run --rm -i \
+  --env ARUBA_ENV=demo \
+  --env ARUBA_USERNAME \
+  --env ARUBA_PASSWORD \
+  ghcr.io/mnbro/aruba-fatturazione-elettronica-mcp:latest
+```
+
 MCP client config:
 
 ```json
