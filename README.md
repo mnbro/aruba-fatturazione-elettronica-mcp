@@ -3,7 +3,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/aruba-fatturazione-elettronica-mcp.svg)](https://pypi.org/project/aruba-fatturazione-elettronica-mcp/)
 [![Python versions](https://img.shields.io/pypi/pyversions/aruba-fatturazione-elettronica-mcp.svg)](https://pypi.org/project/aruba-fatturazione-elettronica-mcp/)
 [![License](https://img.shields.io/badge/license-PolyForm%20Internal%20Use%201.0.0-blue)](LICENSE)
-[![CI](https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/actions/workflows/ci.yml)
+[![CI](https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/actions/workflows/ci.yml?query=branch%3Amaster)
 [![Ruff](https://img.shields.io/badge/lint-ruff-46a2f1)](https://docs.astral.sh/ruff/)
 [![mypy](https://img.shields.io/badge/type%20checked-mypy-blue)](https://mypy-lang.org/)
 [![Coverage](https://img.shields.io/codecov/c/github/mnbro/aruba-fatturazione-elettronica-mcp.svg)](https://codecov.io/gh/mnbro/aruba-fatturazione-elettronica-mcp)
