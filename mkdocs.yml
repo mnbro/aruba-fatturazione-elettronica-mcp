@@ -1,6 +1,7 @@
 site_name: Aruba Fatturazione Elettronica MCP Read-only
 site_url: https://mnbro.github.io/aruba-fatturazione-elettronica-mcp/
 repo_url: https://github.com/mnbro/aruba-fatturazione-elettronica-mcp
+repo_name: v0.4.0
 theme:
   name: material
   features:
