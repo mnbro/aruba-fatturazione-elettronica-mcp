@@ -2,7 +2,55 @@
 
 These tools are built on top of the read-only Aruba GET endpoints. They do not upload invoices, send customer results, accept/reject invoices, update Aruba state or delete anything.
 
+This project remains an Aruba Fatturazione Elettronica domain MCP. It exposes Aruba FE API capabilities, fiscal/e-invoicing helpers, safety checks and normalized exports. It does not orchestrate external systems, call other MCP servers or hardcode business workflows.
+
 `aruba_sync_invoice_index` is the only tool with a local side effect: it writes a SQLite cache at `ARUBA_INDEX_DB_PATH` to make searches and reports faster. It still reads Aruba only through GET endpoints.
+
+## Fiscal document helpers
+
+These are the recommended LLM-friendly tools for agents that need stable fiscal document context without knowing every Aruba endpoint detail.
+
+| Tool | Purpose | Sensitive read |
+|---|---|---:|
+| `normalize_fiscal_document` | Normalize one Aruba document into a stable JSON shape with document, amount, counterparty and raw reference fields. | yes |
+| `get_document_context` | Return the raw document, normalized fields, lifecycle status, notifications, file hints and warnings. | yes |
+| `fiscal_document_summary` | Produce a short structured summary and key facts for one document. | yes |
+| `document_lifecycle_status` | Explain the current fiscal/SDI lifecycle stage: uploaded, sent, delivered, rejected, received, accepted, refused, stored or unknown. | yes |
+| `document_risk_check` | Check technical/fiscal data-quality risks such as rejected status, missing counterparty IDs, inconsistent totals or missing downloads. | yes |
+| `validate_fiscal_document_consistency` | Run technical consistency checks. This is not legal or tax advice. | yes |
+| `counterparty_document_history` | Aggregate document history for a generic counterparty by name, VAT ID, fiscal code, email, PEC or SDI code. | no |
+| `list_pending_or_problem_documents` | List documents that appear to need attention based on lifecycle and data-quality checks. | no |
+| `fiscal_period_summary` | Summarize inbound/outbound document counts and totals for a period. | no |
+| `tax_summary` | Informational tax summary for a period. It does not replace accounting review. | no |
+| `export_fiscal_events` | Export standardized generic fiscal events derived from current Aruba data. | no |
+| `export_document_markdown` | Export one document as generic Markdown for audit, archiving or documentation. | yes |
+| `export_period_markdown` | Export a generic period report as Markdown. | no |
+| `export_counterparty_markdown` | Export a generic counterparty document history report as Markdown. | no |
+| `prepare_document_match_hints` | Return generic counterparty and document matching hints for external consumers. | yes |
+
+Example:
+
+```json
+{
+  "documentId": "IT01234567890_00001.xml",
+  "direction": "outbound",
+  "confirm_read": true
+}
+```
+
+Period report example:
+
+```json
+{
+  "fromDate": "2026-01-01",
+  "toDate": "2026-01-31",
+  "direction": "all",
+  "includeTaxSummary": true,
+  "includeProblemDocuments": true
+}
+```
+
+Upload and customer outcome helpers are intentionally not exposed in this read-only release. They should only be added if explicit low-level Aruba mutating wrappers are introduced with separate confirmations, dry-run behavior, idempotency and audit logging.
 
 ## Invoice context and search
 

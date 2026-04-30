@@ -22,7 +22,9 @@ This MCP server exposes read-only Aruba Fatturazione Elettronica API operations.
 
 Authentication uses `POST /auth/signin` because Aruba requires it for signin and refresh token lifecycle. Those POST requests are internal auth operations only.
 
-The server also includes LLM-friendly read-only tools for invoice context, FatturaPA XML parsing, SDI notification explanations, VAT summaries, duplicate/anomaly checks, safe redaction and an optional local SQLite invoice index. The index writes only to the configured local database path and never modifies Aruba.
+The server also includes LLM-friendly read-only tools for fiscal document normalization, document context, lifecycle status, risk checks, FatturaPA XML parsing, SDI notification explanations, VAT summaries, duplicate/anomaly checks, safe redaction and generic Markdown/event exports. The optional local SQLite index writes only to the configured local database path and never modifies Aruba.
+
+This is an Aruba Fatturazione Elettronica domain MCP, not a business workflow orchestrator. It does not call other MCP servers or integrate with external CRM, email, wiki, chat, billing or reporting systems.
 
 Badges for PyPI, release, downloads and Codecov become active after the first publication/release and Codecov setup.
 
@@ -62,6 +64,28 @@ docker run --rm -i \
 ```
 
 See the [Docker documentation](https://mnbro.github.io/aruba-fatturazione-elettronica-mcp/docker/) for MCP client configuration and local index volume setup.
+
+## LLM-friendly helpers
+
+Recommended helper tools for agents:
+
+- `normalize_fiscal_document`
+- `get_document_context`
+- `fiscal_document_summary`
+- `document_lifecycle_status`
+- `document_risk_check`
+- `validate_fiscal_document_consistency`
+- `counterparty_document_history`
+- `list_pending_or_problem_documents`
+- `fiscal_period_summary`
+- `tax_summary`
+- `export_fiscal_events`
+- `export_document_markdown`
+- `export_period_markdown`
+- `export_counterparty_markdown`
+- `prepare_document_match_hints`
+
+These helpers are built over the existing read-only Aruba wrappers. They normalize, summarize, validate and export fiscal document context without modifying Aruba state.
 
 ## MCP client config
 

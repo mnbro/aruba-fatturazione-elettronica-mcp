@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+
+- Added generic fiscal document helper tools for normalization, context, lifecycle status, risk checks, consistency checks, period summaries, tax summaries, fiscal event exports, Markdown exports and match hints.
+- Clarified that the project remains an Aruba Fatturazione Elettronica domain MCP, not a cross-system business orchestrator.
+
 ## 0.3.0
 
 - Added a Debian slim based Docker image for the MCP server.

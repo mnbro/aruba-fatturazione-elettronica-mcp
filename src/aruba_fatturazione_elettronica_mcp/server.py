@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections import Counter
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, cast
@@ -32,18 +33,28 @@ from .invoice_xml import (
     validate_invoice_structure,
 )
 from .llm_tools import (
+    counterparty_match_hints,
     derive_status,
+    document_lifecycle,
+    document_markdown,
     duplicate_candidates,
     fetch_invoice_by_filename,
     fetch_notifications,
     filter_invoices,
     find_invoices,
+    fiscal_document_risk,
+    fiscal_document_summary_payload,
+    fiscal_events_from_documents,
     get_full_context,
+    normalize_fiscal_document_payload,
     parse_invoice_from_payload,
     parse_notifications,
+    period_summary_from_documents,
     redact_invoice,
     status_report,
     table_from_rows,
+    tax_summary_from_documents,
+    validate_fiscal_consistency,
 )
 from .local_index import InvoiceIndex
 
@@ -1454,6 +1465,404 @@ async def aruba_get_safe_invoice_summary(
     return {"ok": True, "summary": redact_invoice(summary["summary"], "standard")}
 
 
+@mcp.tool(annotations=READ_ONLY_TOOL)
+async def normalize_fiscal_document(
+    documentId: str,
+    direction: str,
+    documentType: str | None = None,
+    confirm_read: bool = False,
+) -> dict[str, Any]:
+    """Normalize one Aruba fiscal document into a stable JSON shape.
+
+    This is read-only and uses existing Aruba invoice download wrappers.
+    """
+
+    try:
+        payload, parsed = await _load_document_for_helper(documentId, direction, confirm_read)
+        return {
+            "ok": True,
+            "document": normalize_fiscal_document_payload(
+                document_id=documentId,
+                direction=_fiscal_direction(direction),
+                document_type=documentType,
+                raw_document=payload,
+                parsed_xml=parsed,
+            ),
+        }
+    except ArubaMCPError as exc:
+        return exc.to_dict()
+
+
+@mcp.tool(annotations=READ_ONLY_TOOL)
+async def get_document_context(
+    documentId: str,
+    direction: str,
+    confirm_read: bool = False,
+) -> dict[str, Any]:
+    """Return complete read-only context for one Aruba fiscal document."""
+
+    try:
+        payload, parsed = await _load_document_for_helper(documentId, direction, confirm_read)
+        api_direction = _api_direction(direction)
+        normalized = normalize_fiscal_document_payload(
+            document_id=documentId,
+            direction=_fiscal_direction(direction),
+            document_type=None,
+            raw_document=payload,
+            parsed_xml=parsed,
+        )
+        notifications = await _safe_notifications(api_direction, documentId, confirm_read)
+        lifecycle = document_lifecycle(normalized, notifications)
+        files = _downloadable_files(payload)
+        return {
+            "ok": True,
+            "document": payload,
+            "normalized": normalized,
+            "lifecycleStatus": lifecycle,
+            "notifications": notifications,
+            "pddAvailable": _has_pdd_reference(payload),
+            "downloadableFiles": files,
+            "relatedDocuments": _related_documents(payload),
+            "warnings": normalized.get("warnings", []),
+        }
+    except ArubaMCPError as exc:
+        return exc.to_dict()
+
+
+@mcp.tool(annotations=READ_ONLY_TOOL)
+async def fiscal_document_summary(
+    documentId: str,
+    direction: str,
+    confirm_read: bool = False,
+) -> dict[str, Any]:
+    """Return a compact LLM-friendly summary for one fiscal document."""
+
+    result = cast(
+        dict[str, Any],
+        await normalize_fiscal_document(documentId, direction, confirm_read=confirm_read),
+    )
+    if not result.get("ok"):
+        return result
+    return {"ok": True, **fiscal_document_summary_payload(result["document"])}
+
+
+@mcp.tool(annotations=READ_ONLY_TOOL)
+async def document_lifecycle_status(
+    documentId: str,
+    direction: str,
+    asOfDate: str | None = None,
+    confirm_read: bool = False,
+) -> dict[str, Any]:
+    """Explain one document's fiscal/SDI lifecycle status."""
+
+    try:
+        _validate_iso8601("asOfDate", asOfDate)
+        context = cast(
+            dict[str, Any],
+            await get_document_context(documentId, direction, confirm_read=confirm_read),
+        )
+        if not context.get("ok"):
+            return context
+        status = cast(dict[str, Any], context["lifecycleStatus"])
+        status["asOfDate"] = asOfDate
+        return {"ok": True, **status}
+    except ArubaMCPError as exc:
+        return exc.to_dict()
+
+
+@mcp.tool(annotations=READ_ONLY_TOOL)
+async def document_risk_check(
+    documentId: str,
+    direction: str,
+    confirm_read: bool = False,
+) -> dict[str, Any]:
+    """Evaluate fiscal/technical document risks without giving legal or tax advice."""
+
+    context = cast(
+        dict[str, Any], await get_document_context(documentId, direction, confirm_read=confirm_read)
+    )
+    if not context.get("ok"):
+        return context
+    return {
+        "ok": True,
+        **fiscal_document_risk(
+            context["normalized"],
+            context["lifecycleStatus"],
+            pdd_available=bool(context.get("pddAvailable")),
+            downloadable_files=cast(list[dict[str, Any]], context.get("downloadableFiles") or []),
+        ),
+    }
+
+
+@mcp.tool(annotations=READ_ONLY_TOOL)
+async def validate_fiscal_document_consistency(
+    documentId: str,
+    direction: str,
+    confirm_read: bool = False,
+) -> dict[str, Any]:
+    """Run technical consistency checks on one normalized fiscal document."""
+
+    result = cast(
+        dict[str, Any],
+        await normalize_fiscal_document(documentId, direction, confirm_read=confirm_read),
+    )
+    if not result.get("ok"):
+        return result
+    return {"ok": True, **validate_fiscal_consistency(result["document"])}
+
+
+@mcp.tool(annotations=READ_ONLY_TOOL)
+async def counterparty_document_history(
+    counterparty: dict[str, Any],
+    fromDate: str | None = None,
+    toDate: str | None = None,
+    direction: str = "all",
+    limit: int = 200,
+) -> dict[str, Any]:
+    """Aggregate Aruba document history for a generic counterparty."""
+
+    try:
+        documents = await _normalized_documents_for_period(direction, fromDate, toDate, limit)
+        matched = [item for item in documents if _matches_counterparty(item, counterparty)]
+        statuses = Counter(
+            str(item.get("status") or item.get("sdiStatus") or "unknown") for item in matched
+        )
+        outbound = [item for item in matched if item.get("direction") == "outbound"]
+        inbound = [item for item in matched if item.get("direction") == "inbound"]
+        problematic = [item for item in matched if document_lifecycle(item, [])["isProblematic"]]
+        dates = [str(item.get("issueDate")) for item in matched if item.get("issueDate")]
+        return {
+            "ok": True,
+            "counterparty": counterparty,
+            "documentsCount": len(matched),
+            "outboundCount": len(outbound),
+            "inboundCount": len(inbound),
+            "totalOutboundAmount": _sum_document_amounts(outbound),
+            "totalInboundAmount": _sum_document_amounts(inbound),
+            "rejectedCount": sum(1 for item in problematic if "reject" in json.dumps(item).lower()),
+            "problematicCount": len(problematic),
+            "lastDocumentDate": max(dates) if dates else None,
+            "commonStatuses": [
+                {"status": status, "count": count} for status, count in statuses.most_common()
+            ],
+            "warnings": [] if matched else ["No matching documents were found."],
+        }
+    except ArubaMCPError as exc:
+        return exc.to_dict()
+
+
+@mcp.tool(annotations=READ_ONLY_TOOL)
+async def list_pending_or_problem_documents(
+    fromDate: str | None = None,
+    toDate: str | None = None,
+    direction: str = "all",
+    includeProblemOnly: bool = True,
+    limit: int = 200,
+) -> dict[str, Any]:
+    """List fiscal documents that appear to need attention."""
+
+    try:
+        documents = await _normalized_documents_for_period(direction, fromDate, toDate, limit)
+        rows = []
+        for document in documents:
+            lifecycle = document_lifecycle(document, [])
+            risk = fiscal_document_risk(
+                document,
+                lifecycle,
+                pdd_available=_has_pdd_reference(document.get("rawRefs", {}).get("aruba", {})),
+                downloadable_files=_downloadable_files(
+                    document.get("rawRefs", {}).get("aruba", {})
+                ),
+            )
+            if includeProblemOnly and risk["riskLevel"] == "low":
+                continue
+            rows.append(
+                {
+                    "documentId": document.get("documentId"),
+                    "direction": document.get("direction"),
+                    "number": document.get("number"),
+                    "counterpartyName": document.get("counterparty", {}).get("name"),
+                    "issueDate": document.get("issueDate"),
+                    "status": document.get("status"),
+                    "sdiStatus": document.get("sdiStatus"),
+                    "problemReason": lifecycle.get("problemReason") or "; ".join(risk["warnings"]),
+                    "riskLevel": risk["riskLevel"],
+                }
+            )
+        return {"ok": True, "count": len(rows), "documents": rows, "warnings": []}
+    except ArubaMCPError as exc:
+        return exc.to_dict()
+
+
+@mcp.tool(annotations=READ_ONLY_TOOL)
+async def fiscal_period_summary(
+    fromDate: str | None = None,
+    toDate: str | None = None,
+    direction: str = "all",
+    limit: int = 200,
+) -> dict[str, Any]:
+    """Return an informational fiscal document summary for a period."""
+
+    try:
+        documents = await _normalized_documents_for_period(direction, fromDate, toDate, limit)
+        return {"ok": True, **period_summary_from_documents(documents, fromDate, toDate)}
+    except ArubaMCPError as exc:
+        return exc.to_dict()
+
+
+@mcp.tool(annotations=READ_ONLY_TOOL)
+async def tax_summary(
+    fromDate: str | None = None,
+    toDate: str | None = None,
+    direction: str = "all",
+    limit: int = 200,
+) -> dict[str, Any]:
+    """Return an informational tax summary for a period; not accounting advice."""
+
+    try:
+        documents = await _normalized_documents_for_period(direction, fromDate, toDate, limit)
+        return {"ok": True, **tax_summary_from_documents(documents, fromDate, toDate)}
+    except ArubaMCPError as exc:
+        return exc.to_dict()
+
+
+@mcp.tool(annotations=READ_ONLY_TOOL)
+async def export_fiscal_events(
+    fromDate: str | None = None,
+    toDate: str | None = None,
+    direction: str = "all",
+    eventTypes: list[str] | None = None,
+    limit: int = 200,
+) -> dict[str, Any]:
+    """Export standardized generic fiscal document events."""
+
+    try:
+        documents = await _normalized_documents_for_period(direction, fromDate, toDate, limit)
+        return {"ok": True, "events": fiscal_events_from_documents(documents, eventTypes)}
+    except ArubaMCPError as exc:
+        return exc.to_dict()
+
+
+@mcp.tool(annotations=READ_ONLY_TOOL)
+async def export_document_markdown(
+    documentId: str,
+    direction: str,
+    includeLineItems: bool = True,
+    includeNotifications: bool = True,
+    includeRawRefs: bool = False,
+    confirm_read: bool = False,
+) -> dict[str, Any]:
+    """Export one fiscal document as generic Markdown."""
+
+    context = cast(
+        dict[str, Any], await get_document_context(documentId, direction, confirm_read=confirm_read)
+    )
+    if not context.get("ok"):
+        return context
+    return {
+        "ok": True,
+        **document_markdown(
+            context["normalized"],
+            cast(list[dict[str, Any]], context.get("notifications") or []),
+            include_line_items=includeLineItems,
+            include_notifications=includeNotifications,
+            include_raw_refs=includeRawRefs,
+        ),
+    }
+
+
+@mcp.tool(annotations=READ_ONLY_TOOL)
+async def export_period_markdown(
+    fromDate: str | None = None,
+    toDate: str | None = None,
+    direction: str = "all",
+    includeTaxSummary: bool = True,
+    includeProblemDocuments: bool = True,
+    limit: int = 200,
+) -> dict[str, Any]:
+    """Export a generic period report as Markdown."""
+
+    summary = cast(
+        dict[str, Any],
+        await fiscal_period_summary(fromDate, toDate, direction=direction, limit=limit),
+    )
+    if not summary.get("ok"):
+        return summary
+    lines = [f"# Fiscal period {fromDate or 'start'} to {toDate or 'end'}", ""]
+    lines.append(f"- Outbound documents: {summary['outbound']['count']}")
+    lines.append(f"- Inbound documents: {summary['inbound']['count']}")
+    lines.append(f"- Problematic documents: {summary['problematicCount']}")
+    if includeTaxSummary:
+        taxes = await tax_summary(fromDate, toDate, direction=direction, limit=limit)
+        lines.extend(
+            ["", "## Tax summary", "```json", json.dumps(taxes, default=str, indent=2), "```"]
+        )
+    if includeProblemDocuments:
+        problems = await list_pending_or_problem_documents(
+            fromDate, toDate, direction=direction, limit=limit
+        )
+        lines.extend(
+            [
+                "",
+                "## Documents needing attention",
+                "```json",
+                json.dumps(problems, default=str, indent=2),
+                "```",
+            ]
+        )
+    return {
+        "ok": True,
+        "title": f"Fiscal period {fromDate or 'start'} to {toDate or 'end'}",
+        "markdown": "\n".join(lines),
+        "metadata": {"fromDate": fromDate, "toDate": toDate, "direction": direction},
+    }
+
+
+@mcp.tool(annotations=READ_ONLY_TOOL)
+async def export_counterparty_markdown(
+    counterparty: dict[str, Any],
+    fromDate: str | None = None,
+    toDate: str | None = None,
+    direction: str = "all",
+    limit: int = 200,
+) -> dict[str, Any]:
+    """Export a generic counterparty fiscal document report as Markdown."""
+
+    history = cast(
+        dict[str, Any],
+        await counterparty_document_history(counterparty, fromDate, toDate, direction, limit),
+    )
+    if not history.get("ok"):
+        return history
+    title = f"Counterparty document history - {counterparty.get('name') or 'unknown'}"
+    lines = [
+        f"# {title}",
+        "",
+        f"- Documents: {history['documentsCount']}",
+        f"- Outbound amount: {history['totalOutboundAmount']}",
+        f"- Inbound amount: {history['totalInboundAmount']}",
+        f"- Problematic documents: {history['problematicCount']}",
+    ]
+    return {"ok": True, "title": title, "markdown": "\n".join(lines), "metadata": history}
+
+
+@mcp.tool(annotations=READ_ONLY_TOOL)
+async def prepare_document_match_hints(
+    documentId: str,
+    direction: str,
+    confirm_read: bool = False,
+) -> dict[str, Any]:
+    """Return generic document and counterparty matching hints for external consumers."""
+
+    result = cast(
+        dict[str, Any],
+        await normalize_fiscal_document(documentId, direction, confirm_read=confirm_read),
+    )
+    if not result.get("ok"):
+        return result
+    return {"ok": True, **counterparty_match_hints(result["document"])}
+
+
 async def _parsed_invoices_for_period(
     direction: str,
     date_from: str | None,
@@ -1485,6 +1894,156 @@ async def _parsed_invoices_for_period(
         if parsed_invoice:
             parsed.append(parsed_invoice)
     return parsed
+
+
+def _api_direction(direction: str) -> str:
+    if direction in {"out", "outbound"}:
+        return "out"
+    if direction in {"in", "inbound"}:
+        return "in"
+    raise ArubaValidationError("direction must be outbound or inbound.")
+
+
+def _fiscal_direction(direction: str) -> str:
+    if direction in {"out", "outbound"}:
+        return "outbound"
+    if direction in {"in", "inbound"}:
+        return "inbound"
+    raise ArubaValidationError("direction must be outbound or inbound.")
+
+
+def _period_direction(direction: str) -> str:
+    if direction in {"all", "both"}:
+        return "both"
+    if direction in {"out", "outbound"}:
+        return "out"
+    if direction in {"in", "inbound"}:
+        return "in"
+    raise ArubaValidationError("direction must be outbound, inbound or all.")
+
+
+async def _load_document_for_helper(
+    document_id: str, direction: str, confirm_read: bool
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    _require_non_empty("documentId", document_id)
+    api_direction = _api_direction(direction)
+    if get_client().settings.confirm_sensitive_reads and not confirm_read:
+        raise ArubaSensitiveReadConfirmationRequired()
+    payload = await _fetch_document_by_id_or_filename(api_direction, document_id)
+    return payload, parse_invoice_from_payload(payload)
+
+
+async def _fetch_document_by_id_or_filename(api_direction: str, document_id: str) -> dict[str, Any]:
+    client = get_client()
+    bucket = "find_sent" if api_direction == "out" else "find_received"
+    if _looks_like_filename(document_id):
+        return await fetch_invoice_by_filename(
+            client,
+            api_direction,
+            document_id,
+            include_file=True,
+            include_pdf=False,
+        )
+    data = await client.ws_get(
+        f"/services/invoice/{api_direction}/{document_id}",
+        params={"includeFile": True, "includePdf": False},
+        bucket=bucket,
+    )
+    return data if isinstance(data, dict) else {"data": data}
+
+
+def _looks_like_filename(value: str) -> bool:
+    lowered = value.lower()
+    return lowered.endswith((".xml", ".p7m", ".zip", ".pdf")) or "/" in lowered
+
+
+async def _safe_notifications(
+    api_direction: str, document_id: str, confirm_read: bool
+) -> list[dict[str, Any]]:
+    if get_client().settings.confirm_sensitive_reads and not confirm_read:
+        return []
+    try:
+        return parse_notifications(
+            await fetch_notifications(get_client(), api_direction, document_id)
+        )
+    except ArubaMCPError:
+        return []
+
+
+def _downloadable_files(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    files: list[dict[str, Any]] = []
+    text = json.dumps(payload, default=str).lower()
+    for label in ("xml", "pdf", "zip", "pdd"):
+        if label in text:
+            files.append({"type": label, "available": True})
+    return files
+
+
+def _has_pdd_reference(payload: dict[str, Any]) -> bool:
+    return "pdd" in json.dumps(payload, default=str).lower()
+
+
+def _related_documents(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    related: list[dict[str, Any]] = []
+    for key in ("relatedDocuments", "linkedDocuments", "documents"):
+        value = payload.get(key)
+        if isinstance(value, list):
+            related.extend(item if isinstance(item, dict) else {"value": item} for item in value)
+    return related
+
+
+async def _normalized_documents_for_period(
+    direction: str, from_date: str | None, to_date: str | None, limit: int
+) -> list[dict[str, Any]]:
+    _validate_iso8601("fromDate", from_date)
+    _validate_iso8601("toDate", to_date)
+    rows = _flatten_by_direction(
+        await _collect_invoices(_period_direction(direction), from_date, to_date, limit=limit)
+    )
+    documents = []
+    for index, row in enumerate(rows):
+        api_direction = row.pop("direction")
+        document_id = str(
+            row.get("id")
+            or row.get("invoiceId")
+            or row.get("filename")
+            or row.get("fileName")
+            or index
+        )
+        parsed = parse_invoice_from_payload(row)
+        documents.append(
+            normalize_fiscal_document_payload(
+                document_id=document_id,
+                direction="outbound" if api_direction == "out" else "inbound",
+                document_type=None,
+                raw_document=row,
+                parsed_xml=parsed,
+            )
+        )
+    return documents
+
+
+def _matches_counterparty(document: dict[str, Any], counterparty: dict[str, Any]) -> bool:
+    party = document.get("counterparty", {})
+    if not counterparty:
+        return True
+    for key in ("vatId", "fiscalCode", "email", "pec", "sdiCode"):
+        expected = counterparty.get(key)
+        if expected and str(party.get(key) or "").lower() == str(expected).lower():
+            return True
+    expected_name = counterparty.get("name")
+    if expected_name and str(expected_name).lower() in str(party.get("name") or "").lower():
+        return True
+    return False
+
+
+def _sum_document_amounts(documents: list[dict[str, Any]]) -> str:
+    total = Decimal("0")
+    for document in documents:
+        value = document.get("amounts", {}).get("totalAmount")
+        if value is not None:
+            total += Decimal(str(value))
+    return str(total.quantize(Decimal("0.01")))
 
 
 REGISTERED_BUSINESS_TOOLS = tuple(endpoint.tool_name for endpoint in ENDPOINTS)
