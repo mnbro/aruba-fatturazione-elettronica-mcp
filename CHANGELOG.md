@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.1](https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/compare/v0.4.0...v0.4.1) (2026-11-23)
+
+
+### Bug Fixes
+
+* **deps:** bump the python-security group across 1 directory with 2 updates ([4c54374](https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/commit/4c543748dbd6a1ced46e1121f0474d7d3b6a098d))
+* **deps:** bump the python-security group across 1 directory with 2 updates ([e28c4d4](https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/commit/e28c4d466005ba38a81969408f4ebbf71edb89ab))
+* **deps:** bump the python-security group across 1 directory with 4 updates ([505d0aa](https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/commit/505d0aae4713c860717af4683d528bdc2bfa449e))
+* **deps:** bump the python-security group across 1 directory with 4 updates ([802ff32](https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/commit/802ff32b2d3f1ef752a65d97c5de11e169e532b4))
+* **deps:** bump the python-security group across 1 directory with 9 updates ([067bc68](https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/commit/067bc682da3954d435771a91895a02e18f46ba99))
+* **deps:** bump the python-security group across 1 directory with 9 updates ([3cca67e](https://github.com/mnbro/aruba-fatturazione-elettronica-mcp/commit/3cca67eb55b1a1522c1ca0d2740a0a1d3e161e22))
+
 ## 0.4.0
 
 - Added generic fiscal document helper tools for normalization, context, lifecycle status, risk checks, consistency checks, period summaries, tax summaries, fiscal event exports, Markdown exports and match hints.
